@@ -110,35 +110,56 @@ export default async function seedDemoData({ container }: ExecArgs) {
       ],
     },
   });
+
+  if (!stockLocationResult?.length) {
+    throw new Error(" Failed to create stock location.");
+  }
+
   const stockLocation = stockLocationResult[0];
 
-  await link.create({
-    [Modules.STOCK_LOCATION]: {
-      stock_location_id: stockLocation.id,
-    },
-    [Modules.FULFILLMENT]: {
-      fulfillment_provider_id: "manual_manual",
-    },
-  });
+  // await link.create({
+  //   [Modules.STOCK_LOCATION]: {
+  //     stock_location_id: stockLocation.id,
+  //   },
+  //   [Modules.FULFILLMENT]: {
+  //     fulfillment_provider_id: "manual_manual",
+  //   },
+  // });
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: stockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_provider_id: "manual_manual",
+      },
+    });
+    logger.info(
+      "Link created between stock location and fulfillment provider."
+    );
+  } catch (error) {
+    logger.error(" Failed to link stock location to fulfillment:", error);
+  }
 
   logger.info("Seeding fulfillment data...");
   const shippingProfiles = await fulfillmentModuleService.listShippingProfiles({
-    type: "default"
-  })
-  let shippingProfile = shippingProfiles.length ? shippingProfiles[0] : null
+    type: "default",
+  });
+  let shippingProfile = shippingProfiles.length ? shippingProfiles[0] : null;
 
   if (!shippingProfile) {
     const { result: shippingProfileResult } =
-    await createShippingProfilesWorkflow(container).run({
-      input: {
-        data: [
-          {
-            name: "Default Shipping Profile",
-            type: "default",
-          },
-        ],
-      },
-    });
+      await createShippingProfilesWorkflow(container).run({
+        input: {
+          data: [
+            {
+              name: "Default Shipping Profile",
+              type: "default",
+            },
+          ],
+        },
+      });
     shippingProfile = shippingProfileResult[0];
   }
 
